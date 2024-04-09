@@ -71,7 +71,6 @@ def run():
         df_saldos_bancarios = pd.DataFrame(result, columns=column_names)
         return df_saldos_bancarios
     df_saldos_bancarios = saldos_bancarios()
-    df_saldos_bancarios
     
 
 
