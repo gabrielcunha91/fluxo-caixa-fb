@@ -39,6 +39,7 @@ def execute_query(query, conn):
     return result, column_names
 
 
+
 def run():
     st.set_page_config(
         page_title="Hello",
@@ -57,10 +58,22 @@ def run():
 
     conn = mysql_connection()
 
-    result, column_names = execute_query(GET_LOJAS, conn)
-    df = pd.DataFrame(result, columns=column_names)
+    def lojas_teste():    
+        result, column_names = execute_query(GET_LOJAS, conn)
+        df_lojas_teste = pd.DataFrame(result, columns=column_names)
 
-    df
+        return df_lojas_teste
+    df_lojas_teste = lojas_teste()
+    df_lojas_teste
+
+    def saldos_bancarios():
+        result, column_names = execute_query(GET_SALDOS_BANCARIOS, conn)
+        df_saldos_bancarios = pd.DataFrame(result, columns=column_names)
+        return df_saldos_bancarios
+    df_saldos_bancarios = saldos_bancarios()
+    df_saldos_bancarios
+    
+
 
 if __name__ == "__main__":
     run()
