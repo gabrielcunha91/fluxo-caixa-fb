@@ -4,8 +4,6 @@ import pandas as pd
 import os
 import numpy as np
 from datetime import datetime
-import MySQLdb
-import pymysql
 import mysql.connector
 from utils.queries import *
 
