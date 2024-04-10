@@ -4,5 +4,5 @@ pandas
 pydeck
 streamlit
 mysql-connector-python
-workalender
+workalendar
 openpyxl
