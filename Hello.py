@@ -6,6 +6,8 @@ import numpy as np
 from datetime import datetime
 import mysql.connector
 from utils.queries import *
+from workalendar.america import Brazil
+import openpyxl
 
 
 LOGGER = get_logger(__name__)
@@ -44,15 +46,17 @@ def run():
     page_icon="💰",
     )
 
+    ######## Parametros de Taxas ########
+    
+    taxa_credito_antecipado = 0.0265
+    taxa_credito_padrao = 0.016
+    taxa_debito = 0.0095
+    taxa_app = 0.0074
+    taxa_pix = 0.0074
+
     ######## Puxando Dados #########
     conn = mysql_connection()
 
-    def lojas_teste():    
-        result, column_names = execute_query(GET_LOJAS, conn)
-        df_lojas_teste = pd.DataFrame(result, columns=column_names)
-
-        return df_lojas_teste
-    df_lojas_teste = lojas_teste()
     
     def saldos_bancarios():
         result, column_names = execute_query(GET_SALDOS_BANCARIOS, conn)
@@ -83,12 +87,12 @@ def run():
 
     def receitas_extraord():
         result, column_names = execute_query(GET_RECEITAS_EXTRAORD, conn)
-        df_receitas_extraord = pd.DataFrame(result, columns=column_names)    
+        df_receitas_extraord_proj = pd.DataFrame(result, columns=column_names)    
     
-        df_receitas_extraord['Data'] = pd.to_datetime(df_receitas_extraord['Data'])
+        df_receitas_extraord_proj['Data'] = pd.to_datetime(df_receitas_extraord_proj['Data'])
 
-        return df_receitas_extraord
-    df_receitas_extraord = receitas_extraord()
+        return df_receitas_extraord_proj
+    df_receitas_extraord_proj = receitas_extraord()
 
     def despesas_aprovadas_pendentes():
         result, column_names = execute_query(GET_DESPESAS_APROVADAS, conn)
@@ -112,7 +116,7 @@ def run():
     def projecao_bares():
         merged_df = pd.merge(df_saldos_bancarios, df_valor_liquido, on=['Data', 'Empresa'], how='outer')
         merged_df = pd.merge(merged_df, df_projecao_zig, on=['Data', 'Empresa'], how='outer')
-        merged_df = pd.merge(merged_df, df_receitas_extraord, on=['Data', 'Empresa'], how='outer')
+        merged_df = pd.merge(merged_df, df_receitas_extraord_proj, on=['Data', 'Empresa'], how='outer')
         merged_df = pd.merge(merged_df, df_despesas_aprovadas, on=['Data', 'Empresa'], how='outer')
         merged_df = pd.merge(merged_df, df_despesas_pagas, on=['Data', 'Empresa'], how='outer')
 
@@ -159,6 +163,191 @@ def run():
         return grouped_df
     df_projecao_grouped = grouped_projecao()
 
+    def lojas():
+        result, column_names = execute_query(GET_LOJAS, conn)
+        df_lojas = pd.DataFrame(result, columns=column_names)
+
+        return df_lojas        
+    df_lojas = lojas()
+
+    def faturam_zig():
+        result, column_names = execute_query(GET_FATURAMENTO_ZIG, conn)
+        df_faturam_zig = pd.DataFrame(result, columns=column_names)       
+
+        df_faturam_zig['Data_Faturamento'] = pd.to_datetime(df_faturam_zig['Data_Faturamento'])
+        df_faturam_zig['Valor_Faturado'] = df_faturam_zig['Valor_Faturado'].astype(float).round(2)  
+
+        return df_faturam_zig     
+    df_faturam_zig = faturam_zig()
+
+    def antecipacao_credito():
+        df_faturam_zig['Antecipacao_Credito'] = 1
+        df_faturam_zig['Antecipacao_Credito'] = df_faturam_zig.apply(lambda row: 0 if row['Loja'] == 'Arcos' else row['Antecipacao_Credito'], axis=1)
+
+        return df_faturam_zig
+    df_faturam_zig = antecipacao_credito()
+
+    def calcular_taxas():
+        df_faturam_zig[['Tipo_Pagamento']].drop_duplicates()
+
+        df_faturam_zig['Taxa'] = 0.00
+        df_faturam_zig['Taxa'] = df_faturam_zig.apply(lambda row: row['Valor_Faturado'] * taxa_debito if row['Tipo_Pagamento'] == 'DÉBITO' else row['Taxa'], axis=1)
+        df_faturam_zig['Taxa'] = df_faturam_zig.apply(lambda row: row['Valor_Faturado'] * taxa_credito_antecipado if (row['Tipo_Pagamento'] == 'CRÉDITO' and row['Antecipacao_Credito'] == 1) else row['Taxa'], axis=1)
+        df_faturam_zig['Taxa'] = df_faturam_zig.apply(lambda row: row['Valor_Faturado'] * taxa_credito_padrao if (row['Tipo_Pagamento'] == 'CRÉDITO' and row['Antecipacao_Credito'] == 0) else row['Taxa'], axis=1)
+        df_faturam_zig['Taxa'] = df_faturam_zig.apply(lambda row: row['Valor_Faturado'] * taxa_app if row['Tipo_Pagamento'] == 'APP' else row['Taxa'], axis=1)
+        df_faturam_zig['Taxa'] = df_faturam_zig.apply(lambda row: row['Valor_Faturado'] * taxa_pix if row['Tipo_Pagamento'] == 'PIX' else row['Taxa'], axis=1)
+
+        df_faturam_zig['Valor_Compensado'] = df_faturam_zig['Valor_Faturado'] - df_faturam_zig['Taxa']
+
+        # Tratando bonus
+        df_faturam_zig['Valor_Compensado'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'BÔNUS' else row['Valor_Compensado'], axis=1)
+
+        return df_faturam_zig
+    df_faturam_zig = calcular_taxas()   
+
+    def custos_zig(df):
+        # Adicionando uma nova coluna 'Custos_Zig' ao dataframe
+        df['Custos_Zig'] = 0.008 * df['Valor_Faturado']
+
+        # Calculando o custo acumulado para cada mês
+        df['Accumulated_Cost'] = df.groupby([df['Data_Faturamento'].dt.year, df['Data_Faturamento'].dt.month, df['ID_Loja']])['Custos_Zig'].cumsum()
+
+        # Identificando as linhas onde o custo acumulado atinge ou ultrapassa 2800.00
+        exceeded_limit = df['Accumulated_Cost'] >= 2800.00
+
+        # Ajustando os valores de 'Custos_Zig' para evitar custos negativos
+        df.loc[exceeded_limit, 'Custos_Zig'] = np.maximum(0, 2800.00 - (df['Accumulated_Cost'] - df['Custos_Zig']))
+
+        # Zerando o custo acumulado para as linhas onde atingiu o limite
+        df.loc[exceeded_limit, 'Accumulated_Cost'] = np.minimum(2800.00, df.loc[exceeded_limit, 'Accumulated_Cost'])
+
+        # Removendo a coluna temporária 'Accumulated_Cost'
+        df = df.drop('Accumulated_Cost', axis=1)
+
+        return df
+    df_faturam_zig = custos_zig(df_faturam_zig)
+
+    def valores_finais_zig():
+
+        df_faturam_zig['Valor_Final'] = df_faturam_zig['Valor_Compensado'] - df_faturam_zig['Custos_Zig']
+        df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'VOUCHER' else row['Valor_Final'], axis=1)
+        df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'DINHEIRO' else row['Valor_Final'], axis=1)
+
+        df_faturam_zig['Taxa'] = df_faturam_zig['Taxa'].astype(float).round(2)
+        df_faturam_zig['Valor_Compensado'] = df_faturam_zig['Valor_Compensado'].astype(float).round(2)
+        df_faturam_zig['Custos_Zig'] = df_faturam_zig['Custos_Zig'].astype(float).round(2)
+        df_faturam_zig['Valor_Final'] = df_faturam_zig['Valor_Final'].astype(float).round(2)
+
+        return df_faturam_zig
+    df_faturam_zig = valores_finais_zig()
+
+    def feriados():
+        # Criar uma instância do calendário brasileiro
+        calendario_brasil = Brazil()
+
+        # Especificar os anos para os quais você deseja obter os feriados
+        anos_desejados = list(range(2023, 2031))
+
+        # Inicializar uma lista vazia para armazenar as datas dos feriados
+        datas_feriados = []
+
+        # Iterar pelos anos e obter as datas dos feriados
+        for ano in anos_desejados:
+            feriados_ano = calendario_brasil.holidays(ano)
+            datas_feriados.extend([feriado[0] for feriado in feriados_ano])
+
+        # Criar uma série com as datas dos feriados
+        serie_datas_feriados = pd.Series(datas_feriados, name='Data_Feriado')
+        serie_datas_feriados = pd.to_datetime(serie_datas_feriados)
+        
+        return serie_datas_feriados
+    serie_datas_feriados = feriados()
+
+    def calcular_data_compensacao():
+        df_faturam_zig[['Tipo_Pagamento']].drop_duplicates()
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig['Data_Faturamento']
+
+        # Debito
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Tipo_Pagamento'] == 'DÉBITO' else row['Data_Compensacao'], axis=1)
+
+        # Credito Antecipado
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if (row['Tipo_Pagamento'] == 'CRÉDITO' 
+                                                                    and row['Antecipacao_Credito'] == 1) else row['Data_Compensacao'], axis=1)
+
+        # Credito Padrao
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=30) 
+                                                                if (row['Tipo_Pagamento'] == 'CRÉDITO' 
+                                                                    and row['Antecipacao_Credito'] == 0) else row['Data_Compensacao'], axis=1) 
+
+        # Pix
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Tipo_Pagamento'] == 'PIX' else row['Data_Compensacao'], axis=1)    
+
+        # App
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Tipo_Pagamento'] == 'APP' else row['Data_Compensacao'], axis=1)    
+
+        # Ajuste Feriados (round 1)
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Data_Compensacao'] in serie_datas_feriados else row['Data_Compensacao'], axis=1)
+        
+        # Ajuste fds
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1)
+                                                                if row['Data_Compensacao'].strftime('%A') == 'Sunday' else row['Data_Compensacao'], axis=1)
+
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=2)
+                                                                if row['Data_Compensacao'].strftime('%A') == 'Saturday' else row['Data_Compensacao'], axis=1)
+
+
+        # Ajuste Feriados (round 2)
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Data_Compensacao'] in serie_datas_feriados else row['Data_Compensacao'], axis=1)    
+
+        # Retirando os horarios das datas
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig['Data_Compensacao'].dt.date
+        df_faturam_zig['Data_Faturamento'] = df_faturam_zig['Data_Faturamento'].dt.date
+
+        return df_faturam_zig
+    df_faturam_zig = calcular_data_compensacao()
+
+    def receitas_extraord_conc():
+        result, column_names = execute_query(GET_RECEITAS_EXTRAORD_CONCILIACAO, conn)
+        df_receitas_extraord = pd.DataFrame(result, columns=column_names)        
+
+        df_receitas_extraord['Data_Competencia'] = pd.to_datetime(df_receitas_extraord['Data_Competencia']).dt.date
+
+        df_receitas_extraord['Data_Venc_Parc_1'] = pd.to_datetime(df_receitas_extraord['Data_Venc_Parc_1']).dt.date
+        df_receitas_extraord['Data_Receb_Parc_1'] = pd.to_datetime(df_receitas_extraord['Data_Receb_Parc_1']).dt.date
+        df_receitas_extraord['Data_Venc_Parc_2'] = pd.to_datetime(df_receitas_extraord['Data_Venc_Parc_2']).dt.date
+        df_receitas_extraord['Data_Receb_Parc_2'] = pd.to_datetime(df_receitas_extraord['Data_Receb_Parc_2']).dt.date
+        df_receitas_extraord['Data_Venc_Parc_3'] = pd.to_datetime(df_receitas_extraord['Data_Venc_Parc_3']).dt.date
+        df_receitas_extraord['Data_Receb_Parc_3'] = pd.to_datetime(df_receitas_extraord['Data_Receb_Parc_3']).dt.date
+        df_receitas_extraord['Data_Venc_Parc_4'] = pd.to_datetime(df_receitas_extraord['Data_Venc_Parc_4']).dt.date
+        df_receitas_extraord['Data_Receb_Parc_4'] = pd.to_datetime(df_receitas_extraord['Data_Receb_Parc_4']).dt.date
+        df_receitas_extraord['Data_Venc_Parc_5'] = pd.to_datetime(df_receitas_extraord['Data_Venc_Parc_5']).dt.date
+        df_receitas_extraord['Data_Receb_Parc_5'] = pd.to_datetime(df_receitas_extraord['Data_Receb_Parc_5']).dt.date
+
+
+        df_receitas_extraord['Valor_Total'] = df_receitas_extraord['Valor_Total'].astype(float).round(2)
+        df_receitas_extraord['Categ_AB'] = df_receitas_extraord['Categ_AB'].astype(float).round(2)
+        df_receitas_extraord['Categ_Aluguel'] = df_receitas_extraord['Categ_Aluguel'].astype(float).round(2)
+        df_receitas_extraord['Categ_Artist'] = df_receitas_extraord['Categ_Artist'].astype(float).round(2)
+        df_receitas_extraord['Categ_Couvert'] = df_receitas_extraord['Categ_Couvert'].astype(float).round(2)
+        df_receitas_extraord['Categ_Locacao'] = df_receitas_extraord['Categ_Locacao'].astype(float).round(2)
+        df_receitas_extraord['Categ_Patroc'] = df_receitas_extraord['Categ_Patroc'].astype(float).round(2)
+        df_receitas_extraord['Categ_Taxa_Serv'] = df_receitas_extraord['Categ_Taxa_Serv'].astype(float).round(2) 
+
+        df_receitas_extraord['Valor_Parc_1'] = df_receitas_extraord['Valor_Parc_1'].astype(float).round(2)
+        df_receitas_extraord['Valor_Parc_2'] = df_receitas_extraord['Valor_Parc_2'].astype(float).round(2) 
+        df_receitas_extraord['Valor_Parc_3'] = df_receitas_extraord['Valor_Parc_3'].astype(float).round(2) 
+        df_receitas_extraord['Valor_Parc_4'] = df_receitas_extraord['Valor_Parc_4'].astype(float).round(2) 
+        df_receitas_extraord['Valor_Parc_5'] = df_receitas_extraord['Valor_Parc_5'].astype(float).round(2)  
+
+
+        return df_receitas_extraord
+    df_receitas_extraord = receitas_extraord()
 
     ######## Definindo Relatorio #########
 
@@ -175,6 +364,15 @@ def run():
 
     if "projecao_grouped" not in st.session_state:
         st.session_state["projecao_grouped"] = df_projecao_grouped    
+
+    if "lojas" not in st.session_state:
+        st.session_state["lojas"] = df_lojas
+
+    if "faturam_zig" not in st.session_state:
+        st.session_state["faturam_zig"] = df_faturam_zig
+
+    if "receitas_extraord" not in st.session_state:
+        st.session_state["receitas_extraord"] = df_receitas_extraord
 
 if __name__ == "__main__":
     run()

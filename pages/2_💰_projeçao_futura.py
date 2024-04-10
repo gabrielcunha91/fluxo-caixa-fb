@@ -24,7 +24,6 @@ def somar_total(df):
     
     return df_com_soma
 
-
 ### Relatorio ###
 
 # Projeção por bar
