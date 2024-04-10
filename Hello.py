@@ -53,8 +53,7 @@ def run():
 
         return df_lojas_teste
     df_lojas_teste = lojas_teste()
-    df_lojas_teste
-
+    
     def saldos_bancarios():
         result, column_names = execute_query(GET_SALDOS_BANCARIOS, conn)
         df_saldos_bancarios = pd.DataFrame(result, columns=column_names)
@@ -163,17 +162,21 @@ def run():
 
     ######## Definindo Relatorio #########
 
-    st.write("# Teste")
-
-    st.sidebar.success("Select a demo above.")
-
+    st.write("# Fluxo Financeiro FB")
+ 
     st.markdown(
         """
-        Teste
+        Utilize as abas localizadas no lado esquerdo para buscar suas análises.
     """
     )
 
-    df_projecao_bares
+    if "projecao_bares" not in st.session_state:
+        st.session_state["projecao_bares"] = df_projecao_bares
+
+    if "projecao_grouped" not in st.session_state:
+        st.session_state["projecao_grouped"] = df_projecao_grouped    
 
 if __name__ == "__main__":
     run()
+
+
