@@ -14,13 +14,12 @@ df_lojas = st.session_state["lojas"]
 lojas = df_lojas["Loja"].unique()
 loja = st.selectbox("Loja", lojas)
 
-df_faturam_zig = st.session_state["faturam_zig"]
 
-df_faturam_zig
 
-df_receitas_extraord = st.session_state["receitas_extraord"]
 
-df_receitas_extraord
+
+
+
 
 df_view_parc_agrup = st.session_state["view_parc_agrup"]
 
@@ -43,37 +42,6 @@ df_mutuos = st.session_state["mutuos"]
 df_mutuos
 
 
-
-# excel_filename = "Conciliacao_FB.xlsx"  # Nome do arquivo Excel na mesma pasta que o código
-
-# # def excel_export():
-        
-# #     id_loja = 292
-    
-# #     # Atualizando Zig
-# #     df_faturam_zig_loja = df_faturam_zig[df_faturam_zig['ID_Loja'] == id_loja]
-# #     sheet_name_zig = 'df_faturam_zig'
-
-# #     if os.path.exists(excel_filename):
-# #         wb = openpyxl.load_workbook(excel_filename)
-# #     else:
-# #         wb = openpyxl.Workbook()
-
-# #     if sheet_name_zig in wb.sheetnames:
-# #         wb.remove(wb[sheet_name_zig])
-
-# #     # Convertendo DataFrame para uma planilha Excel
-# #     ws = wb.create_sheet(title=sheet_name_zig)
-# #     for r_idx, row in enumerate(df_faturam_zig_loja.iterrows(), start=1):
-# #         for c_idx, value in enumerate(row[1], start=1):
-# #             ws.cell(row=r_idx, column=c_idx, value=value)
-
-# #     # Salvando o arquivo Excel
-# #     wb.save(excel_filename)        
-
-# #     return excel_filename
-
-
 def export_to_excel(df, sheet_name, excel_filename):
     if os.path.exists(excel_filename):
         wb = openpyxl.load_workbook(excel_filename)
@@ -91,16 +59,35 @@ def export_to_excel(df, sheet_name, excel_filename):
     wb.save(excel_filename)
 
 excel_filename = 'Conciliacao_FB.xlsx'
+id_loja = 292
 
-# Chama a função para exportar o arquivo Excel
-if st.button('Gerar Excel'):
-    id_loja = 292
+st.divider()
+st.markdown("Faturamento Zig")
+
+df_faturam_zig = st.session_state["faturam_zig"]
+df_faturam_zig
+# Chama a função para atualizar o arquivo Excel
+if st.button('Atualizar Faturam Zig'):
     df_faturam_zig_loja = df_faturam_zig[df_faturam_zig['ID_Loja'] == id_loja]
     sheet_name_zig = 'df_faturam_zig'
     export_to_excel(df_faturam_zig_loja, sheet_name_zig, excel_filename)
-    st.success('Arquivo exportado com sucesso!')
+    st.success('Arquivo atualizado com sucesso!')
 
-    ##Botão de download
+st.divider()
+st.markdown("Receitas Extraordinárias")
+
+df_receitas_extraord = st.session_state["receitas_extraord"]
+df_receitas_extraord
+# Chama a função para atualizar o arquivo Excel
+if st.button('Atualizar Receitas Extraord'):
+    df_receitas_extraord_loja = df_receitas_extraord[df_receitas_extraord['ID_Loja'] == id_loja]
+    sheet_name_receitas_extraord = 'df_receitas_extraord'
+    export_to_excel(df_receitas_extraord_loja, sheet_name_receitas_extraord, excel_filename)
+    st.success('Arquivo atualizado com sucesso!')
+
+st.divider()
+
+if st.button('Baixar Excel'):
     if os.path.exists(excel_filename):
         with open(excel_filename, "rb") as file:
             file_content = file.read()

@@ -347,7 +347,7 @@ def run():
 
 
         return df_receitas_extraord
-    df_receitas_extraord = receitas_extraord()
+    df_receitas_extraord = receitas_extraord_conc()
 
     def view_parc_agrup():
         result, column_names = execute_query(GET_VIEW_PARC_AGRUP, conn)
