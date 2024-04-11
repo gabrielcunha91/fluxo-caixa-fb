@@ -6,4 +6,3 @@ streamlit
 mysql-connector-python
 workalendar
 openpyxl
-os

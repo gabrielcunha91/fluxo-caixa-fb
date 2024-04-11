@@ -74,27 +74,41 @@ df_mutuos
 # #     return excel_filename
 
 
-# def export_to_excel(df, sheet_name, excel_filename):
-#     if os.path.exists(excel_filename):
-#         wb = openpyxl.load_workbook(excel_filename)
-#     else:
-#         wb = openpyxl.Workbook()
+def export_to_excel(df, sheet_name, excel_filename):
+    if os.path.exists(excel_filename):
+        wb = openpyxl.load_workbook(excel_filename)
+    else:
+        wb = openpyxl.Workbook()
 
-#     if sheet_name in wb.sheetnames:
-#         wb.remove(wb[sheet_name])
+    if sheet_name in wb.sheetnames:
+        wb.remove(wb[sheet_name])
 
-#     ws = wb.create_sheet(title=sheet_name)
-#     for r_idx, row in enumerate(df.iterrows(), start=1):
-#         for c_idx, value in enumerate(row[1], start=1):
-#             ws.cell(row=r_idx, column=c_idx, value=value)
+    ws = wb.create_sheet(title=sheet_name)
+    for r_idx, row in enumerate(df.iterrows(), start=1):
+        for c_idx, value in enumerate(row[1], start=1):
+            ws.cell(row=r_idx, column=c_idx, value=value)
 
-#     wb.save(excel_filename)
+    wb.save(excel_filename)
 
-# # Chama a função para exportar o arquivo Excel
-# if st.button('Gerar Excel'):
-#     id_loja = 292
-#     df_faturam_zig_loja = df_faturam_zig[df_faturam_zig['ID_Loja'] == id_loja]
-#     excel_filename = 'Conciliacao_FB.xlsx'
-#     sheet_name_zig = 'df_faturam_zig'
-#     export_to_excel(df_faturam_zig_loja, sheet_name_zig, excel_filename)
-#     st.success('Arquivo exportado com sucesso!')
+excel_filename = 'Conciliacao_FB.xlsx'
+
+# Chama a função para exportar o arquivo Excel
+if st.button('Gerar Excel'):
+    id_loja = 292
+    df_faturam_zig_loja = df_faturam_zig[df_faturam_zig['ID_Loja'] == id_loja]
+    sheet_name_zig = 'df_faturam_zig'
+    export_to_excel(df_faturam_zig_loja, sheet_name_zig, excel_filename)
+    st.success('Arquivo exportado com sucesso!')
+
+    ##Botão de download
+    if os.path.exists(excel_filename):
+        with open(excel_filename, "rb") as file:
+            file_content = file.read()
+        st.download_button(
+            label="Clique para baixar o arquivo Excel",
+            data=file_content,
+            file_name="Conciliacao_FB.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+
