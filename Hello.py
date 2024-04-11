@@ -349,6 +349,73 @@ def run():
         return df_receitas_extraord
     df_receitas_extraord = receitas_extraord()
 
+    def view_parc_agrup():
+        result, column_names = execute_query(GET_VIEW_PARC_AGRUP, conn)
+        df_view_parc_agrup = pd.DataFrame(result, columns=column_names)        
+
+        df_view_parc_agrup = df_view_parc_agrup.drop('Numero_Linha', axis=1)
+
+        df_view_parc_agrup['Data_Vencimento'] = df_view_parc_agrup['Data_Vencimento'].dt.date
+        df_view_parc_agrup['Data_Recebimento'] = df_view_parc_agrup['Data_Recebimento'].dt.date
+        df_view_parc_agrup['Data_Ocorrencia'] = df_view_parc_agrup['Data_Ocorrencia'].dt.date
+
+        df_view_parc_agrup['Valor_Parcela'] = df_view_parc_agrup['Valor_Parcela'].astype(float).round(2)
+
+        return df_view_parc_agrup
+    df_view_parc_agrup = view_parc_agrup()
+
+    def custos_blueme_sem_parcelamento():
+        result, column_names = execute_query(GET_CUSTOS_BLUEME_SEM_PARCELAMENTO, conn)
+        df_custos_blueme_sem_parcelamento = pd.DataFrame(result, columns=column_names)   
+
+        df_custos_blueme_sem_parcelamento['Valor'] = df_custos_blueme_sem_parcelamento['Valor'].astype(float).round(2)
+        df_custos_blueme_sem_parcelamento['Data_Vencimento'] = pd.to_datetime(df_custos_blueme_sem_parcelamento['Data_Vencimento'])
+        df_custos_blueme_sem_parcelamento['Data_Competencia'] = pd.to_datetime(df_custos_blueme_sem_parcelamento['Data_Competencia'])
+        df_custos_blueme_sem_parcelamento['Data_Lancamento'] = pd.to_datetime(df_custos_blueme_sem_parcelamento['Data_Lancamento'])
+        df_custos_blueme_sem_parcelamento['Realizacao_Pgto'] = pd.to_datetime(df_custos_blueme_sem_parcelamento['Realizacao_Pgto'])
+        df_custos_blueme_sem_parcelamento['Previsao_Pgto'] = pd.to_datetime(df_custos_blueme_sem_parcelamento['Previsao_Pgto'])    
+
+        return df_custos_blueme_sem_parcelamento
+    df_custos_blueme_sem_parcelamento = custos_blueme_sem_parcelamento()
+
+    def custos_blueme_com_parcelamento():
+        result, column_names = execute_query(GET_CUSTOS_BLUEME_COM_PARCELAMENTO, conn)
+        df_custos_blueme_com_parcelamento = pd.DataFrame(result, columns=column_names)           
+
+        df_custos_blueme_com_parcelamento['Valor_Parcela'] = df_custos_blueme_com_parcelamento['Valor_Parcela'].astype(float).round(2)
+        df_custos_blueme_com_parcelamento['Valor_Original'] = df_custos_blueme_com_parcelamento['Valor_Original'].astype(float).round(2)
+        df_custos_blueme_com_parcelamento['Valor_Liquido'] = df_custos_blueme_com_parcelamento['Valor_Liquido'].astype(float).round(2)
+
+        df_custos_blueme_com_parcelamento['Vencimento_Parcela'] = pd.to_datetime(df_custos_blueme_com_parcelamento['Vencimento_Parcela'], format='%d/%m/%Y')
+        df_custos_blueme_com_parcelamento['Previsao_Parcela'] = pd.to_datetime(df_custos_blueme_com_parcelamento['Previsao_Parcela'], format='%d/%m/%Y')
+        df_custos_blueme_com_parcelamento['Realiz_Parcela'] = pd.to_datetime(df_custos_blueme_com_parcelamento['Realiz_Parcela'], format='%d/%m/%Y')
+        df_custos_blueme_com_parcelamento['Data_Lancamento'] = pd.to_datetime(df_custos_blueme_com_parcelamento['Data_Lancamento'], format='%d/%m/%Y')
+
+        return df_custos_blueme_com_parcelamento
+    df_custos_blueme_com_parcelamento = custos_blueme_com_parcelamento()
+
+
+    def extratos_bancarios():
+        result, column_names = execute_query(GET_EXTRATOS_BANCARIOS, conn)
+        df_extratos = pd.DataFrame(result, columns=column_names)
+
+        df_extratos['Data_Transacao'] = df_extratos['Data_Transacao'].dt.date
+
+        df_extratos['Valor'] = df_extratos['Valor'].astype(float).round(2)
+
+        return df_extratos
+    df_extratos = extratos_bancarios()
+
+    def mutuos():
+        result, column_names = execute_query(GET_MUTUOS, conn)
+        df_mutuos = pd.DataFrame(result, columns=column_names)
+
+        df_mutuos['Data_Mutuo'] = df_mutuos['Data_Mutuo'].dt.date
+        df_mutuos['Valor'] = df_mutuos['Valor'].astype(float).round(2)
+
+        return df_mutuos
+    df_mutuos = mutuos()
+
     ######## Definindo Relatorio #########
 
     st.write("# Fluxo Financeiro FB")
@@ -373,6 +440,21 @@ def run():
 
     if "receitas_extraord" not in st.session_state:
         st.session_state["receitas_extraord"] = df_receitas_extraord
+
+    if "view_parc_agrup" not in st.session_state:
+        st.session_state["view_parc_agrup"] = df_view_parc_agrup
+
+    if "custos_blueme_sem_parcelamento" not in st.session_state:
+        st.session_state["custos_blueme_sem_parcelamento"] = df_custos_blueme_sem_parcelamento
+
+    if "custos_blueme_com_parcelamento" not in st.session_state:
+        st.session_state["custos_blueme_com_parcelamento"] = df_custos_blueme_com_parcelamento
+
+    if "extratos_bancarios" not in st.session_state:
+        st.session_state["extratos_bancarios"] = df_extratos
+
+    if "mutuos" not in st.session_state:
+        st.session_state["mutuos"] = df_mutuos
 
 if __name__ == "__main__":
     run()
