@@ -17,14 +17,6 @@ loja = st.selectbox("Loja", lojas)
 
 
 
-
-
-
-
-df_view_parc_agrup = st.session_state["view_parc_agrup"]
-
-df_view_parc_agrup
-
 df_custos_blueme_sem_parcelamento = st.session_state["custos_blueme_sem_parcelamento"]
 
 df_custos_blueme_sem_parcelamento
@@ -59,7 +51,7 @@ def export_to_excel(df, sheet_name, excel_filename):
     wb.save(excel_filename)
 
 excel_filename = 'Conciliacao_FB.xlsx'
-id_loja = 292
+id_loja = 266
 
 st.divider()
 st.markdown("Faturamento Zig")
@@ -84,6 +76,19 @@ if st.button('Atualizar Receitas Extraord'):
     sheet_name_receitas_extraord = 'df_receitas_extraord'
     export_to_excel(df_receitas_extraord_loja, sheet_name_receitas_extraord, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
+
+st.divider()
+st.markdown("View Parcelamentos Agrupados - Receitas Extraord")
+
+df_view_parc_agrup = st.session_state["view_parc_agrup"]
+df_view_parc_agrup
+# Chama a função para atualizar o arquivo Excel
+if st.button('Atualizar View Parcelamentos Receitas Extraord'):
+    df_view_parc_loja = df_view_parc_agrup[df_view_parc_agrup['ID_Loja'] == id_loja]
+    sheet_name_view_parc_agrup = 'view_parc_agrup'
+    export_to_excel(df_view_parc_loja, sheet_name_view_parc_agrup, excel_filename)
+    st.success('Arquivo atualizado com sucesso!')
+
 
 st.divider()
 
