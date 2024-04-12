@@ -14,10 +14,13 @@ df_lojas = st.session_state["lojas"]
 lojas = df_lojas["Loja"].unique()
 loja = st.selectbox("Loja", lojas)
 
+# Defina um dicionário para mapear nomes de lojas a IDs de lojas
+mapeamento_lojas = dict(zip(df_lojas["Loja"], df_lojas["ID_Loja"]))
 
+# Obtenha o ID da loja selecionada
+id_loja = mapeamento_lojas[loja]
 
-
-
+st.write(id_loja)
 
 def export_to_excel(df, sheet_name, excel_filename):
     if os.path.exists(excel_filename):
@@ -35,17 +38,17 @@ def export_to_excel(df, sheet_name, excel_filename):
 
     wb.save(excel_filename)
 
+# Definindo o nome do arquivo excel
 excel_filename = 'Conciliacao_FB.xlsx'
-id_loja = 266
 
 st.divider()
 st.markdown("Faturamento Zig")
 
 df_faturam_zig = st.session_state["faturam_zig"]
-df_faturam_zig
+df_faturam_zig_loja = df_faturam_zig[df_faturam_zig['ID_Loja'] == id_loja]
+df_faturam_zig_loja
 # Chama a função para atualizar o arquivo Excel
 if st.button('Atualizar Faturam Zig'):
-    df_faturam_zig_loja = df_faturam_zig[df_faturam_zig['ID_Loja'] == id_loja]
     sheet_name_zig = 'df_faturam_zig'
     export_to_excel(df_faturam_zig_loja, sheet_name_zig, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
@@ -138,5 +141,6 @@ if st.button('Baixar Excel'):
             file_name="Conciliacao_FB.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
 
 
