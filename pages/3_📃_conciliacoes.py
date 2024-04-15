@@ -130,6 +130,20 @@ if st.button('Atualizar Mutuos'):
     st.success('Arquivo atualizado com sucesso!')
 
 st.divider()
+st.markdown("Tesouraria - Transações")
+
+df_tesouraria_trans = st.session_state["tesouraria_trans"]
+df_tesouraria_trans_loja = df_tesouraria_trans[df_tesouraria_trans['ID_Loja'] == id_loja]
+df_tesouraria_trans_loja
+# Chama a função para atualizar o arquivo Excel
+if st.button('Atualizar Tesouraria Transações'):
+    sheet_name_tesouraria = 'df_tesouraria_trans'
+    export_to_excel(df_tesouraria_trans_loja, sheet_name_tesouraria, excel_filename)
+    st.success('Arquivo atualizado com sucesso!')
+
+
+
+st.divider()
 
 if st.button('Baixar Excel'):
     if os.path.exists(excel_filename):

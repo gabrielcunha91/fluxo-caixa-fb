@@ -285,6 +285,10 @@ def run():
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
                                                                 if row['Tipo_Pagamento'] == 'PIX' else row['Data_Compensacao'], axis=1)    
 
+        # Dinheiro
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Tipo_Pagamento'] == 'DINHEIRO' else row['Data_Compensacao'], axis=1)  
+
         # App
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
                                                                 if row['Tipo_Pagamento'] == 'APP' else row['Data_Compensacao'], axis=1)    
@@ -416,6 +420,16 @@ def run():
         return df_mutuos
     df_mutuos = mutuos()
 
+    def tesouraria_transacoes():
+        result, column_names = execute_query(GET_TESOURARIA_TRANSACOES, conn)
+        df_tesouraria_trans = pd.DataFrame(result, columns=column_names)
+
+        df_tesouraria_trans['Data_Transacao'] = df_tesouraria_trans['Data_Transacao'].dt.date
+        df_tesouraria_trans['Valor'] = df_tesouraria_trans['Valor'].astype(float).round(2)
+
+        return df_tesouraria_trans
+    df_tesouraria_trans = tesouraria_transacoes()
+
     ######## Definindo Relatorio #########
 
     st.write("# Fluxo Financeiro FB")
@@ -455,6 +469,9 @@ def run():
 
     if "mutuos" not in st.session_state:
         st.session_state["mutuos"] = df_mutuos
+
+    if "tesouraria_trans" not in st.session_state:
+        st.session_state["tesouraria_trans"] = df_tesouraria_trans
 
 if __name__ == "__main__":
     run()

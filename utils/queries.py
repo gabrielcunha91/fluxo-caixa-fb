@@ -283,3 +283,16 @@ LEFT JOIN T_LOJAS tl ON (tm.FK_LOJA_SAIDA = tl.ID)
 LEFT JOIN T_LOJAS tl2 ON (tm.FK_LOJA_ENTRADA = tl2.ID)
 ORDER BY tm.`DATA` DESC
 '''
+
+GET_TESOURARIA_TRANSACOES = '''
+SELECT
+ttt.ID as 'tes_ID',
+tl.ID as 'ID_Loja',
+tl.NOME as 'Loja',
+ttt.DATA_TRANSACAO as 'Data_Transacao',
+ttt.VALOR as 'Valor',
+ttt.DESCRICAO as 'Descricao'
+FROM T_TESOURARIA_TRANSACOES ttt 
+INNER JOIN T_LOJAS tl ON (ttt.FK_LOJA = tl.ID)   
+'''
+
