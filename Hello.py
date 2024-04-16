@@ -260,8 +260,16 @@ def run():
         serie_datas_feriados = pd.Series(datas_feriados, name='Data_Feriado')
         serie_datas_feriados = pd.to_datetime(serie_datas_feriados)
         
+        nova_data = pd.to_datetime('2024-03-29')
+
+        serie_datas_feriados = pd.concat([serie_datas_feriados, pd.Series([nova_data])])
+
+        # Resetar o índice
+        serie_datas_feriados.reset_index(drop=True, inplace=True)
+
         return serie_datas_feriados
     serie_datas_feriados = feriados()
+
 
     def calcular_data_compensacao():
         df_faturam_zig[['Tipo_Pagamento']].drop_duplicates()
@@ -293,9 +301,13 @@ def run():
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
                                                                 if row['Tipo_Pagamento'] == 'APP' else row['Data_Compensacao'], axis=1)    
 
+         # App
+        df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
+                                                                if row['Tipo_Pagamento'] == 'VOUCHER' else row['Data_Compensacao'], axis=1)                                                                   
+
         # Ajuste Feriados (round 1)
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
-                                                                if row['Data_Compensacao'] in serie_datas_feriados else row['Data_Compensacao'], axis=1)
+                                                                if row['Data_Compensacao'] in serie_datas_feriados.values else row['Data_Compensacao'], axis=1)
         
         # Ajuste fds
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1)
@@ -307,7 +319,7 @@ def run():
 
         # Ajuste Feriados (round 2)
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig.apply(lambda row: row['Data_Compensacao'] + pd.Timedelta(days=1) 
-                                                                if row['Data_Compensacao'] in serie_datas_feriados else row['Data_Compensacao'], axis=1)    
+                                                                if row['Data_Compensacao'] in serie_datas_feriados.values else row['Data_Compensacao'], axis=1)    
 
         # Retirando os horarios das datas
         df_faturam_zig['Data_Compensacao'] = df_faturam_zig['Data_Compensacao'].dt.date
