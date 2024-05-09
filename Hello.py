@@ -230,8 +230,10 @@ def run():
     def valores_finais_zig():
 
         df_faturam_zig['Valor_Final'] = df_faturam_zig['Valor_Compensado'] - df_faturam_zig['Custos_Zig']
-        df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'VOUCHER' else row['Valor_Final'], axis=1)
-        df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'DINHEIRO' else row['Valor_Final'], axis=1)
+        # df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'VOUCHER' else row['Valor_Final'], axis=1)
+        df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: row['Custos_Zig']*(-1) if row['Tipo_Pagamento'] == 'VOUCHER' else row['Valor_Final'], axis=1)
+        # df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: 0 if row['Tipo_Pagamento'] == 'DINHEIRO' else row['Valor_Final'], axis=1)
+        df_faturam_zig['Valor_Final'] = df_faturam_zig.apply(lambda row: row['Custos_Zig']*(-1) if row['Tipo_Pagamento'] == 'DINHEIRO' else row['Valor_Final'], axis=1)
 
         df_faturam_zig['Taxa'] = df_faturam_zig['Taxa'].astype(float).round(2)
         df_faturam_zig['Valor_Compensado'] = df_faturam_zig['Valor_Compensado'].astype(float).round(2)
