@@ -74,7 +74,7 @@ tzf.VALOR AS 'Valor_Faturado',
 tzf.TIPO_PAGAMENTO AS 'Tipo_Pagamento'
 FROM T_ZIG_FATURAMENTO tzf
 LEFT JOIN T_LOJAS tl ON (tzf.FK_LOJA = tl.ID)
-WHERE (tzf.DATA >= '2024-01-01 00:00:00' AND tzf.VALOR > 0)
+WHERE (tzf.DATA >= '2024-04-01 00:00:00' AND tzf.VALOR > 0)
 ORDER BY tl.NOME, tzf.DATA;
 '''
 
