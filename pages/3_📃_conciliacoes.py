@@ -64,7 +64,7 @@ def export_to_excel(df, sheet_name, excel_filename):
 # Definindo o nome do arquivo excel
 excel_filename = 'Conciliacao_FB.xlsx'
 
-st.divider()
+st.markdown('---')
 st.markdown("Faturamento Zig")
 
 df_faturam_zig = st.session_state["faturam_zig"]
@@ -76,7 +76,7 @@ if st.button('Atualizar Faturam Zig'):
     export_to_excel(df_faturam_zig_loja, sheet_name_zig, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("Receitas Extraordinárias")
 
 df_receitas_extraord = st.session_state["receitas_extraord"]
@@ -88,7 +88,7 @@ if st.button('Atualizar Receitas Extraord'):
     export_to_excel(df_receitas_extraord_loja, sheet_name_receitas_extraord, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("View Parcelamentos Agrupados - Receitas Extraord")
 
 df_view_parc_agrup = st.session_state["view_parc_agrup"]
@@ -100,7 +100,7 @@ if st.button('Atualizar View Parcelamentos Receitas Extraord'):
     export_to_excel(df_view_parc_loja, sheet_name_view_parc_agrup, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("Custos BlueMe Sem Parcelamento")
 
 df_custos_blueme_sem_parcelamento = st.session_state["custos_blueme_sem_parcelamento"]
@@ -112,7 +112,7 @@ if st.button('Atualizar Custos BlueMe Sem Parcelamento'):
     export_to_excel(df_custos_blueme_sem_parcelamento_loja, sheet_name_custos_blueme_sem_parcelamento, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("Custos BlueMe Com Parcelamento")
 
 df_custos_blueme_com_parcelamento = st.session_state["custos_blueme_com_parcelamento"]
@@ -124,7 +124,7 @@ if st.button('Atualizar Custos BlueMe Com Parcelamento'):
     export_to_excel(df_custos_blueme_com_parcelamento_loja, sheet_name_custos_blueme_com_parcelamento, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("Extratos Bancários")
 
 df_extratos = st.session_state["extratos_bancarios"]
@@ -136,7 +136,7 @@ if st.button('Atualizar Extratos'):
     export_to_excel(df_extratos_loja, sheet_name_extratos, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("Mutuos")
 
 df_mutuos = st.session_state["mutuos"]
@@ -152,7 +152,7 @@ if st.button('Atualizar Mutuos'):
     export_to_excel(df_mutuos_loja, sheet_name_mutuos, excel_filename)
     st.success('Arquivo atualizado com sucesso!')
 
-st.divider()
+st.markdown('---')
 st.markdown("Tesouraria - Transações")
 
 df_tesouraria_trans = st.session_state["tesouraria_trans"]
@@ -166,7 +166,7 @@ if st.button('Atualizar Tesouraria Transações'):
 
 
 
-st.divider()
+st.markdown('---')
 
 if st.button('Baixar Excel'):
     if os.path.exists(excel_filename):
